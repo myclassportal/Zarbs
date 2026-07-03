@@ -33,6 +33,10 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  if (e.request.method !== 'GET') {
+    return;
+  }
+
   if (e.request.url.includes('supabase.co')) {
     e.respondWith(fetch(e.request));
     return;

@@ -406,7 +406,7 @@
             <span style="font-size: 14pt; font-weight: bold; color: #2c3e50; display: block; margin-bottom: 10px;" id="ast-welcome">سلام قهرمان!</span>
             <p style="font-size: 11pt; color: #333; margin: 0;">
                 بازی قبلی‌ات با موفقیت تمام شده بود، اما به خاطر قطع شدن اینترنت، ستاره‌ی طلایی‌ات به دفتر کلاسی معلم نرسیده بود. 
-                اصلاً نگران نباش! نیازی به بازی دوباره نیست. دکمه زیر را بزن تا ستاره‌ات ثبت بشه و کارنامه‌ات رو ببینی. 😊
+                اصلاً نگران نباش! نیازی به بازی دوباره نیست. دکمه زیر را بزن تا ستاره‌ات ثبت بشه و کارنامه‌اش رو ببینی. 😊
             </p>
         </div>
         <div style="display: flex; flex-direction: column; gap: 10px; background: #f8f9fa; border: 1px solid #bdc3c7; border-radius: 10px; padding: 15px; margin-bottom: 25px; text-align: right; direction: rtl; font-size:12pt;">
@@ -1434,10 +1434,11 @@
         authenticatePortalStudent();
 
         if ('serviceWorker' in navigator) {
+            const hadExistingController = !!navigator.serviceWorker.controller;
             navigator.serviceWorker.register('sw.js');
             let refreshing = false;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (!refreshing) {
+                if (!refreshing && hadExistingController) {
                     window.location.reload();
                     refreshing = true;
                 }
