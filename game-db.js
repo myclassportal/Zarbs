@@ -1,4 +1,4 @@
-const SUPABASE_URL = "https://ylzoftakuaocdtezbyga.supabase.co";
+const SUPABASE_URL = "https://db.essapour.ir";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlsem9mdGFrdWFvY2R0ZXpieWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NjczMjAsImV4cCI6MjA5NzE0MzMyMH0.hFoXNtWSepg6TbYKHitTbrOm3VimC6BKEy0xMMh19XM";
 
 window.Portal = {
@@ -51,22 +51,7 @@ window.Portal = {
         const lib = window.supabase || supabase;
         this.supabaseClient = lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        this.showLoadingScreen(true, 'در حال دریافت نام مدرسه از پرتال...', '40%');
-
-        const { data: school, error: schoolErr } = await this.supabaseClient
-          .from('school_info')
-          .select('school_name')
-          .limit(1)
-          .maybeSingle();
-
-        if (school && !schoolErr && school.school_name) {
-          const schoolTitleEl = document.getElementById('portal-school-title');
-          const schoolGameEl = document.getElementById('school');
-          if (schoolTitleEl) schoolTitleEl.textContent = school.school_name;
-          if (schoolGameEl) schoolGameEl.textContent = school.school_name;
-        }
-
-        this.showLoadingScreen(true, 'در حال احراز هویت و دریافت نمایه‌ات...', '60%');
+        this.showLoadingScreen(true, 'در حال احراز هویت و دریافت نمایه‌ات...', '50%');
 
         const { data: profile, error: errProf } = await this.supabaseClient.rpc('get_student_profile', {
           query_student_id: this.studentId,
@@ -77,30 +62,31 @@ window.Portal = {
           const studentProfile = profile[0];
           this.studentName = studentProfile.name;
 
-          this.showLoadingScreen(true, 'در حال استعلام تعداد ستاره‌های درخواستی تکلیف...', '80%');
+          this.showLoadingScreen(true, 'در حال خواندن ستاره‌ها و بازی‌های قبلی...', '80%');
 
-          const { data: hwData, error: hwErr } = await this.supabaseClient
-            .from('homeworks')
-            .select('required_stars')
-            .eq('id', this.homeworkId)
-            .maybeSingle();
+          const { data: gameData, error: errGame } = await this.supabaseClient.rpc('get_student_game_data', {
+            query_student_id: this.studentId,
+            query_homework_id: this.homeworkId
+          });
 
-          if (hwData && !hwErr) {
-            this.requiredStars = hwData.required_stars || 3;
-          }
+          if (errGame) throw errGame;
 
-          this.showLoadingScreen(true, 'در حال خواندن ستاره‌ها و بازی‌های قبلی...', '90%');
+          if (gameData) {
+            if (gameData.school && gameData.school.school_name) {
+              const schoolTitleEl = document.getElementById('portal-school-title');
+              const schoolGameEl = document.getElementById('school');
+              if (schoolTitleEl) schoolTitleEl.textContent = gameData.school.school_name;
+              if (schoolGameEl) schoolGameEl.textContent = gameData.school.school_name;
+            }
 
-          const progressKey = `${this.homeworkId}_${this.studentId}`;
-          const { data: progress, error: errProg } = await this.supabaseClient
-              .from('student_game_progress')
-              .select('*')
-              .eq('id', progressKey)
-              .maybeSingle();
+            if (gameData.homework && gameData.homework.required_stars) {
+              this.requiredStars = gameData.homework.required_stars || 3;
+            }
 
-          if (progress && !errProg) {
-            this.previousPlays = progress.play_count || 0;
-            this.previousStars = progress.stars_earned || 0;
+            if (gameData.progress) {
+              this.previousPlays = gameData.progress.play_count || 0;
+              this.previousStars = gameData.progress.stars_earned || 0;
+            }
           }
 
           this.showLoadingScreen(true, 'اتصال موفق!', '100%');
