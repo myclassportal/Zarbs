@@ -49,7 +49,11 @@ window.Portal = {
         }
 
         const lib = window.supabase || supabase;
-        this.supabaseClient = lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        this.supabaseClient = lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          realtime: {
+            autoConnect: false
+          }
+        });
 
         this.showLoadingScreen(true, 'در حال احراز هویت و دریافت نمایه‌ات...', '50%');
 
