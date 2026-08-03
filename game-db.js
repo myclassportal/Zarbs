@@ -41,7 +41,7 @@ window.Portal = {
       this.showLoadingScreen(true, 'در حال آماده‌سازی اتصال به سرور...');
 
       try {
-        this.showLoadingScreen(true, 'در حال آماده‌سازی اتصال به سرور...', '15%');
+        this.showLoadingScreen(true, 'در حال احراز هویت و دریافت اطلاعات...', '50%');
         
         const hasSupabaseLib = (typeof supabase !== 'undefined' && supabase !== null) || (window.supabase !== undefined && window.supabase !== null);
         if (!hasSupabaseLib) {
@@ -55,42 +55,31 @@ window.Portal = {
           }
         });
 
-        this.showLoadingScreen(true, 'در حال احراز هویت و دریافت نمایه‌ات...', '50%');
-
-        const { data: profile, error: errProf } = await this.supabaseClient.rpc('get_student_profile', {
+        const { data: gameData, error: errGame } = await this.supabaseClient.rpc('get_student_game_data', {
           query_student_id: this.studentId,
-          query_token: this.token
+          query_token: this.token,
+          query_homework_id: this.homeworkId
         });
 
-        if (profile && profile.length > 0 && !errProf) {
-          const studentProfile = profile[0];
-          this.studentName = studentProfile.name;
+        if (errGame) throw errGame;
 
-          this.showLoadingScreen(true, 'در حال خواندن ستاره‌ها و بازی‌های قبلی...', '80%');
+        if (gameData && gameData.student && gameData.student.name) {
+          this.studentName = gameData.student.name;
 
-          const { data: gameData, error: errGame } = await this.supabaseClient.rpc('get_student_game_data', {
-            query_student_id: this.studentId,
-            query_homework_id: this.homeworkId
-          });
+          if (gameData.school && gameData.school.school_name) {
+            const schoolTitleEl = document.getElementById('portal-school-title');
+            const schoolGameEl = document.getElementById('school');
+            if (schoolTitleEl) schoolTitleEl.textContent = gameData.school.school_name;
+            if (schoolGameEl) schoolGameEl.textContent = gameData.school.school_name;
+          }
 
-          if (errGame) throw errGame;
+          if (gameData.homework && gameData.homework.required_stars) {
+            this.requiredStars = gameData.homework.required_stars || 3;
+          }
 
-          if (gameData) {
-            if (gameData.school && gameData.school.school_name) {
-              const schoolTitleEl = document.getElementById('portal-school-title');
-              const schoolGameEl = document.getElementById('school');
-              if (schoolTitleEl) schoolTitleEl.textContent = gameData.school.school_name;
-              if (schoolGameEl) schoolGameEl.textContent = gameData.school.school_name;
-            }
-
-            if (gameData.homework && gameData.homework.required_stars) {
-              this.requiredStars = gameData.homework.required_stars || 3;
-            }
-
-            if (gameData.progress) {
-              this.previousPlays = gameData.progress.play_count || 0;
-              this.previousStars = gameData.progress.stars_earned || 0;
-            }
+          if (gameData.progress) {
+            this.previousPlays = gameData.progress.play_count || 0;
+            this.previousStars = gameData.progress.stars_earned || 0;
           }
 
           this.showLoadingScreen(true, 'اتصال موفق!', '100%');
@@ -108,7 +97,7 @@ window.Portal = {
             });
           }
         } else {
-          throw new Error("نمایه دانش‌آموز یافت نشد.");
+          throw new Error("نمایه دانش‌آموز یا اطلاعات تکلیف یافت نشد.");
         }
       } catch (e) {
         console.error(e);
