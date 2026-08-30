@@ -27,6 +27,64 @@ window.Portal = {
     return `${dateStr} - ${timeStr}`;
   },
 
+  isNetworkError(error) {
+    if (!error) return false;
+    const msg = (error.message || '').toLowerCase();
+    const status = error.status || 0;
+    return msg.includes('failed to fetch') || 
+           msg.includes('network error') || 
+           msg.includes('networkerror') || 
+           msg.includes('load failed') || 
+           msg.includes('timeout') ||
+           msg.includes('abort') ||
+           status === 0 || 
+           status === 408 ||
+           status === 502 || 
+           status === 503 || 
+           status === 504;
+  },
+
+  async fetchWithSmartTimeout(fn, timeouts = [3800, 5200], delayMs = 500) {
+    const maxAttempts = timeouts.length;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const controller = new AbortController();
+      const currentTimeout = timeouts[attempt - 1];
+      let timerId = null;
+
+      try {
+        const timerPromise = new Promise((_, reject) => {
+          timerId = setTimeout(() => {
+            controller.abort();
+            reject(new Error('TIMEOUT'));
+          }, currentTimeout);
+        });
+
+        const fetchPromise = fn(controller.signal);
+        const result = await Promise.race([fetchPromise, timerPromise]);
+
+        if (timerId) clearTimeout(timerId);
+
+        if (result && result.error) {
+          if (this.isNetworkError(result.error) && attempt < maxAttempts) {
+            throw new Error('NETWORK_FAIL');
+          }
+          return result;
+        }
+        return result;
+      } catch (err) {
+        if (timerId) clearTimeout(timerId);
+        controller.abort();
+
+        if (attempt < maxAttempts) {
+          await new Promise(res => setTimeout(res, delayMs));
+        } else {
+          return { data: null, error: { message: 'Network Timeout', status: 0 } };
+        }
+      }
+    }
+  },
+
   async authenticate(callbacks) {
     this._lastAuthCallbacks = callbacks;
     const urlParams = new URLSearchParams(window.location.search);
@@ -55,11 +113,17 @@ window.Portal = {
           }
         });
 
-        const { data: gameData, error: errGame } = await this.supabaseClient.rpc('get_student_game_data', {
-          query_student_id: this.studentId,
-          query_token: this.token,
-          query_homework_id: this.homeworkId
-        });
+        const { data: gameData, error: errGame } = await this.fetchWithSmartTimeout(
+          (signal) => this.supabaseClient
+            .rpc('get_student_game_data', {
+              query_student_id: this.studentId,
+              query_token: this.token,
+              query_homework_id: this.homeworkId
+            })
+            .abortSignal(signal),
+          [3800, 5200],
+          500
+        );
 
         if (errGame) throw errGame;
 
@@ -230,16 +294,22 @@ window.Portal = {
       if (progressBar) progressBar.style.width = '50%';
       if (statusText) statusText.innerText = 'ارتباط با سرور پرتال کلاس...';
 
-      const { error } = await this.supabaseClient.rpc('submit_game_progress', {
-        query_student_id: this.studentId,
-        query_token: this.token,
-        query_homework_id: this.homeworkId,
-        query_game_id: this.gameId,
-        plays: currentPlays,
-        stars: currentStars,
-        duration: 0,
-        played_at: currentPersianDateTime
-      });
+      const { error } = await this.fetchWithSmartTimeout(
+        (signal) => this.supabaseClient
+          .rpc('submit_game_progress', {
+            query_student_id: this.studentId,
+            query_token: this.token,
+            query_homework_id: this.homeworkId,
+            query_game_id: this.gameId,
+            plays: currentPlays,
+            stars: currentStars,
+            duration: 0,
+            played_at: currentPersianDateTime
+          })
+          .abortSignal(signal),
+        [3500, 5000],
+        400
+      );
 
       if (progressBar) progressBar.style.width = '80%';
       await new Promise(resolve => setTimeout(resolve, 200));

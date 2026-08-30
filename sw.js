@@ -11,10 +11,19 @@ const ASSETS = [
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
+      return Promise.allSettled(
+        ASSETS.map((url) => {
+          return fetch(url).then((response) => {
+            if (response.ok) {
+              return cache.put(url, response);
+            }
+          }).catch((err) => {
+            console.warn('Failed to cache game asset:', url, err);
+          });
+        })
+      );
+    }).then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', (e) => {
@@ -27,9 +36,8 @@ self.addEventListener('activate', (e) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (e) => {
