@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>بازی ضرب سه رقم در سه رقم (با انتقال جمع)</title>
+    <title>بازی ضرب سه رقم در سه رقم</title>
     <script src="supabase.js" defer></script>
     <script src="game-db.js" defer></script>
+    <script src="game-audio.js" defer></script>
     <style>
         @font-face {
             font-family: 'Vazirmatn';
@@ -66,7 +67,7 @@
             border-radius: 15px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 600px;
+            max-width: 650px;
             text-align: center;
             position: relative;
         }
@@ -131,7 +132,10 @@
             cursor: pointer;
             margin: 5px;
             font-weight: bold;
+            transition: 0.2s;
         }
+        .btn:active { transform: translateY(2px); box-shadow: none; }
+        .btn[disabled] { background: #bdc3c7 !important; cursor: not-allowed !important; box-shadow: none !important; opacity: 0.6 !important; }
         .btn-secondary {
             background-color: #e67e22;
         }
@@ -168,40 +172,53 @@
         }
         .math-grid {
             display: inline-grid;
-            grid-template-columns: repeat(7, 40px) 70px;
+            grid-template-columns: repeat(7, 38px) 70px;
             gap: 6px 4px;
             margin: 20px auto;
             direction: ltr;
             align-items: center;
             justify-content: center;
         }
-        @media (max-width: 450px) {
+        @media (max-width: 480px) {
             .math-grid {
-                grid-template-columns: repeat(7, 34px) 60px;
+                grid-template-columns: repeat(7, 30px) 55px;
                 gap: 4px 2px;
             }
             .cell, .input-cell {
-                width: 34px;
-                height: 34px;
-                font-size: 1.2em;
+                width: 30px;
+                height: 30px;
+                font-size: 1.1em;
             }
             .add-carry-cell {
-                font-size: 0.9em;
+                font-size: 0.85em;
                 height: 18px;
             }
         }
-        .cell{display:flex;align-items:center;justify-content:center;font-size:1.5em;font-weight:bold;transition:all 0.3s;border-radius:50%;width:38px;height:38px;}
-        .add-carry-cell{display:flex;align-items:flex-end;justify-content:center;font-size:1em;font-weight:bold;color:var(--carry-red);height:20px;width:100%;margin-bottom:-8px;z-index:10;}
+        .cell{display:flex;align-items:center;justify-content:center;font-size:1.4em;font-weight:bold;transition:all 0.3s;border-radius:50%;width:36px;height:36px;}
+        .add-carry-cell{display:flex;align-items:flex-end;justify-content:center;font-size:1em;font-weight:bold;color:var(--carry-red);height:20px;width:100%;margin-bottom:-8px;z-index:10;transition:all 0.3s;}
         .highlight-digit{background-color:#ffe082;color:#d35400;border:2px solid #f39c12;transform:scale(1.1);}
-        .col-highlight{background-color:#e3f2fd;border-radius:4px;}
-        .input-cell{width:38px;height:38px;font-size:1.3em;text-align:center;border:2px solid #bdc3c7;border-radius:6px;background:#fafafa;padding:0;-moz-appearance:textfield;}
+        @keyframes col-pulse {
+            0% { background-color: #e3f2fd; box-shadow: 0 0 0 2px #2196f3; }
+            50% { background-color: #bbdefb; box-shadow: 0 0 8px 3px rgba(33, 150, 243, 0.6); }
+            100% { background-color: #e3f2fd; box-shadow: 0 0 0 2px #2196f3; }
+        }
+        .col-highlight {
+            animation: col-pulse 1.2s infinite ease-in-out !important;
+            border-radius: 6px !important;
+            border-color: #2196f3 !important;
+        }
+        .input-cell{width:36px;height:36px;font-size:1.25em;text-align:center;border:2px solid #bdc3c7;border-radius:6px;background:#fafafa;padding:0;-moz-appearance:textfield;}
         .input-cell:focus{background:#e8f0fe;border-color:#2980b9;}
         .input-cell:read-only{background:#f0f0f0;color:#555;cursor:default;}
         .correct-input{background-color:#d4edda !important;border-color:var(--accent) !important;color:var(--accent);}
         .wrong-input{background-color:#f8d7da !important;border-color:var(--wrong) !important;color:var(--wrong);cursor:pointer;}
         .line{grid-column:1/9;height:2px;background-color:#333;margin:4px 0;}
         .operator{grid-column:1/2;display:flex;align-items:center;justify-content:center;font-size:1.4em;color:#555;}
-        .stats-bar{display:flex;justify-content:space-between;background:#ecf0f1;padding:8px 12px;border-radius:8px;margin-bottom:15px;font-size:0.9em;}
+        .stats-bar{display:flex;justify-content:space-between;align-items:center;background:#ecf0f1;padding:8px 12px;border-radius:8px;margin-bottom:15px;font-size:0.9em;}
+        .sound-toggle-btn {
+            background: #e3f2fd; border: 1px solid #90caf9; color: #0d47a1;
+            border-radius: 8px; padding: 4px 10px; cursor: pointer; font-size: 0.85rem; font-family: inherit; font-weight: bold;
+        }
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -292,7 +309,7 @@
     <div class="modal-box">
         <div class="modal-title">⚠️ شروع حالت آموزشی</div>
         <div class="modal-text">
-            آیا مطمئنی قهرمان؟ برای استفاده از راهنمای گام‌به‌گام، تمام پاسخ‌های فعلی‌ات پاک می‌شن و باید به راهنمایی‌ها گوش کنی. این دور فقط برای یادگیریه و ستاره‌ای براش ثبت نمی‌شه.
+            با ورود به راهنمای گام‌به‌گام صوتی، راه‌حل مرحله‌به‌مرحله آموزش داده می‌شود. این دور فقط برای یادگیری است و ستاره‌ای ثبت نمی‌شود.
         </div>
         <div class="modal-buttons">
             <button class="btn btn-secondary" onclick="startPracticeMode()">آره، شروع کن</button>
@@ -349,8 +366,9 @@
         </div>
 
         <div class="stats-bar">
-            <span id="dispName">دانش‌آموز</span>
-            <span>⭐ ستاره: <span id="dispStars">۰</span></span>
+            <span>👤 <span id="dispName">دانش‌آموز</span></span>
+            <button id="btn-sound-toggle" class="sound-toggle-btn" onclick="toggleAppSound()">🔊 صدا: روشن</button>
+            <span>⭐ <span id="dispStars">۰</span></span>
         </div>
 
         <h2>ضرب سه رقم در سه رقم</h2>
@@ -431,19 +449,6 @@
     let STORAGE = 'studentProfile_Zarb3x3_Default';
     let GAME_STATE_STORAGE = 'gameState_Zarb3x3_Default';
 
-    const ART_NUMS = {
-        0: [[1,1,1],[1,0,1],[1,0,1],[1,0,1],[1,1,1]],
-        1: [[0,1,0],[1,1,0],[0,1,0],[0,1,0],[1,1,1]],
-        2: [[1,1,1],[0,0,1],[1,1,1],[1,0,0],[1,1,1]],
-        3: [[1,1,1],[0,0,1],[1,1,1],[0,0,1],[1,1,1]],
-        4: [[1,0,1],[1,0,1],[1,1,1],[0,0,1],[0,0,1]],
-        5: [[1,1,1],[1,0,0],[1,1,1],[0,0,1],[1,1,1]],
-        6: [[1,1,1],[1,0,0],[1,1,1],[1,0,1],[1,1,1]],
-        7: [[1,1,1],[0,0,1],[0,1,0],[0,1,0],[0,1,0]],
-        8: [[1,1,1],[1,0,1],[1,1,1],[1,0,1],[1,1,1]],
-        9: [[1,1,1],[1,0,1],[1,1,1],[0,0,1],[1,1,1]]
-    };
-
     let state = {
         name: "", stars: 0, totalPlays: 0,
         currentProblem: null, currentGameUsedHint: false,
@@ -455,6 +460,27 @@
     };
 
     let lastFocusedInputId = null;
+    let isHintSpeaking = false;
+    let hintSafetyTimer = null;
+
+    function toggleAppSound() {
+        const isMuted = GameAudio.toggleMute();
+        const btn = document.getElementById('btn-sound-toggle');
+        if (btn) btn.innerText = isMuted ? '🔇 صدا: خاموش' : '🔊 صدا: روشن';
+    }
+
+    function setHintBtnLock(locked) {
+        isHintSpeaking = locked;
+        const btn = document.getElementById('hintBtn');
+        if (btn) btn.disabled = locked;
+        clearTimeout(hintSafetyTimer);
+        if (locked) {
+            hintSafetyTimer = setTimeout(() => {
+                isHintSpeaking = false;
+                if (btn) btn.disabled = false;
+            }, 8000);
+        }
+    }
 
     function setLastFocus(el) {
         lastFocusedInputId = el.id;
@@ -537,7 +563,8 @@
             }
             document.getElementById('hintBtn').disabled = false;
             if(checkAllFilledForHint()) {
-                document.getElementById('newQBtn').classList.remove('btn-hidden');
+                document.getElementById('finishBtn').classList.remove('btn-hidden');
+                document.getElementById('newQBtn').classList.add('btn-hidden');
             }
         } else {
             for(let r=1; r<=4; r++) {
@@ -557,6 +584,7 @@
     }
 
     function showScreen(id) {
+        GameAudio.stop();
         const screens = ['screen-register', 'screen-game', 'screen-report', 'screen-assistant', 'portal-submitting-screen'];
         screens.forEach(s => {
             const el = document.getElementById(s);
@@ -588,6 +616,8 @@
     }
 
     function newQuestion() {
+        GameAudio.stop();
+        setHintBtnLock(false);
         updateStats();
         
         const n1 = generateRandom3Digit();
@@ -601,7 +631,7 @@
             n1, n2, 
             row1Len: (r1Val === 0) ? 3 : r1Val.toString().length,
             row2Len: (r2Val === 0) ? 4 : (r2Val * 10).toString().length,
-            row3Len: (r3Val === 0) ? 4 : (r3Val * 100).toString().length,
+            row3Len: (r3Val === 0) ? 5 : (r3Val * 100).toString().length,
             sumLen: sumVal.toString().length
         };
         state.currentGameUsedHint = false;
@@ -643,6 +673,7 @@
     }
 
     function handleCarryInput(el) {
+        GameAudio.playSFX('click');
         if(el && el.value) {
             let engVal = toEnglishNum(el.value);
             el.value = !isNaN(engVal) ? toPersianNum(engVal) : "";
@@ -653,6 +684,7 @@
     }
 
     function toggleStrike(el) { 
+        GameAudio.playSFX('click');
         if(el && el.value) {
             el.classList.toggle('used');
             el.classList.remove('active-carry'); 
@@ -689,12 +721,15 @@
 
         for(let i=0; i<7; i++) { if (i > (6 - problem.row1Len)) html += createInput(1, i); else html += `<div class="cell"></div>`; }
         html += createRowBtn(1);
+        
         html += `<div class="operator">+</div>`;
         for(let i=1; i<7; i++) { if (i > (6 - problem.row2Len)) html += createInput(2, i); else html += `<div class="cell"></div>`; }
         html += createRowBtn(2);
+        
         html += `<div class="operator">+</div>`;
         for(let i=1; i<7; i++) { if (i > (6 - problem.row3Len)) html += createInput(3, i); else html += `<div class="cell"></div>`; }
         html += createRowBtn(3);
+        
         html += `<div class="line"></div>`;
         for(let i=0; i<7; i++) { if (i > (6 - problem.sumLen)) html += createInput(4, i); else html += `<div class="cell"></div>`; }
         html += createRowBtn(4);
@@ -740,6 +775,7 @@
 
     function handleInput(el, rowIdx) {
         if(el.readOnly) return; 
+        GameAudio.playSFX('click');
         if(el.value) { 
             let engVal = toEnglishNum(el.value); 
             el.value = !isNaN(engVal) ? toPersianNum(engVal) : ""; 
@@ -800,15 +836,18 @@
         });
         const btn = document.getElementById(`btn_row_${rowIdx}`);
         if (rowIsCorrect) {
+            if (!silent) GameAudio.playSFX('correct');
             if (btn) btn.style.visibility = 'hidden';
             document.querySelectorAll(`input[id^="inp_${rowIdx}_"]`).forEach(inp => inp.disabled = true);
             if(rowIdx === 4) {
                 document.getElementById('finishBtn').classList.remove('btn-hidden');
             }
         } else if (!silent) {
+            GameAudio.playSFX('wrong');
             if (btn) {
                 btn.innerText = "پاک‌کن"; btn.classList.add('btn-eraser');
                 btn.onclick = function() { 
+                    GameAudio.playSFX('click');
                     document.querySelectorAll(`input[id^="inp_${rowIdx}_"]`).forEach(i => {
                         i.value = ""; 
                         i.classList.remove('wrong-input', 'correct-input');
@@ -861,6 +900,7 @@
     }
 
     function revealOneStepHint() {
+        if (isHintSpeaking) return;
         try {
             if (state.currentGameUsedHint) {
                 executeHintLogic();
@@ -942,10 +982,13 @@
                         resetCarryOver(); 
                         zInp.value = toPersianNum(0); zInp.classList.add('correct-input');
                         flashElement(zInp);
-                        showHintAlert("چون داری دهگان رو ضرب می‌کنی، اول یه دونه صفر خوشگل بذار اینجا! (جعبه‌ی انتقال هم پاک شد)");
+                        showHintAlert("چون دَهْگان رو ضَرْب می‌کنیم، اول یک دونه ۰ می‌ذاریم.");
+                        setHintBtnLock(true);
+                        GameAudio.speakZeroDahgan(() => setHintBtnLock(false));
                         saveGridState(); checkRowFilled(r); return;
                     }
                 }
+
                 if(r === 3) { 
                     const zInp1 = document.getElementById(`inp_3_6`);
                     const zInp2 = document.getElementById(`inp_3_5`);
@@ -953,13 +996,17 @@
                         resetCarryOver(); 
                         zInp1.value = toPersianNum(0); zInp1.classList.add('correct-input');
                         flashElement(zInp1);
-                        showHintAlert("چون داری صدگان رو ضرب می‌کنی، اول صفر اول رو می‌گذاریم. (جعبه‌ی انتقال هم پاک شد)");
+                        showHintAlert("چون صَدْگان رو ضَرْب می‌کنیم، اول ۰ِ یِکان رو می‌ذاریم.");
+                        setHintBtnLock(true);
+                        GameAudio.speakZeroAvalSadgan(() => setHintBtnLock(false));
                         saveGridState(); checkRowFilled(r); return;
                     }
                     if(zInp2 && !zInp2.value) {
                         zInp2.value = toPersianNum(0); zInp2.classList.add('correct-input');
                         flashElement(zInp2);
-                        showHintAlert("سپس صفر دوم رو هم برای صدگان بذار!");
+                        showHintAlert("حالا ۰ِ دَهْگان رو هم می‌ذاریم.");
+                        setHintBtnLock(true);
+                        GameAudio.speakZeroDovomSadgan(() => setHintBtnLock(false));
                         saveGridState(); checkRowFilled(r); return;
                     }
                 }
@@ -968,14 +1015,11 @@
                     if(r === 1 && inputs.every(inp => inp && inp.value === "")) resetCarryOver();
                     
                     const multiplierDigit = parseInt(n2Str[3-r]);
-                    const multiplierPlace = r===1 ? "یکان" : r===2 ? "دهگان" : "صدگان";
-                    
                     let currentCarry = 0;
                     let shift = (r-1); 
                     
                     for(let step=0; step<3; step++) { 
                         const topDigit = parseInt(n1Str[2-step]);
-                        const topPlace = step===0 ? "یکان" : step===1 ? "دهگان" : "صدگان";
                         
                         if (step > 0) {
                              const carryBoxes = [document.getElementById('carry_0'), document.getElementById('carry_1'), document.getElementById('carry_2')];
@@ -983,7 +1027,8 @@
                              if(availableCarry) { currentCarry = parseInt(toEnglishNum(availableCarry.value)); }
                         }
                         
-                        const product = (topDigit * multiplierDigit) + currentCarry;
+                        const rawProduct = topDigit * multiplierDigit;
+                        const product = rawProduct + currentCarry;
                         const writeDigit = product % 10;
                         const newCarry = Math.floor(product / 10);
                         
@@ -996,7 +1041,7 @@
                             if (qBot) qBot.classList.add('highlight-digit');
                             if (qTop) qTop.classList.add('highlight-digit');
 
-                            let msg = `<b>${toPersianNum(multiplierDigit)}</b> در <b>${toPersianNum(topDigit)}</b> می‌شه <b>${toPersianNum(topDigit*multiplierDigit)}</b>`;
+                            let msg = `<b>${toPersianNum(multiplierDigit)}</b> در <b>${toPersianNum(topDigit)}</b> می‌شه <b>${toPersianNum(rawProduct)}</b>`;
                             
                             if(currentCarry > 0) {
                                 msg += `، با <b>${toPersianNum(currentCarry)}</b> انتقال می‌شه <b>${toPersianNum(product)}</b>`;
@@ -1004,12 +1049,14 @@
                             }
                             msg += `.`;
                             
-                            if(step === 2 && newCarry > 0) {
+                            const isLastDigit = (step === 2);
+
+                            if(isLastDigit && newCarry > 0) {
                                 const carryInp = document.getElementById(`inp_${r}_${targetCol-1}`);
                                 if(carryInp) {
                                     inp.value = toPersianNum(writeDigit); inp.classList.add('correct-input'); flashElement(inp);
                                     carryInp.value = toPersianNum(newCarry); carryInp.classList.add('correct-input'); flashElement(carryInp);
-                                    msg += `<br>چون رقم آخره، کل عدد <b>${toPersianNum(product)}</b> رو کامل می‌نویسیم.`;
+                                    msg += `<br>چون به رقم آخر رسیدیم، عدد رو کامل می‌نویسیم.`;
                                 } else { inp.value = toPersianNum(writeDigit); flashElement(inp); }
                             } else {
                                 inp.value = toPersianNum(writeDigit); inp.classList.add('correct-input'); flashElement(inp);
@@ -1018,7 +1065,12 @@
                                     setCarryInBox(newCarry);
                                 } else { msg += `<br><b>${toPersianNum(writeDigit)}</b> رو می‌نویسیم.`; }
                             }
-                            showHintAlert(msg); saveGridState(); checkRowFilled(r); return;
+
+                            showHintAlert(msg);
+                            setHintBtnLock(true);
+                            GameAudio.speakMultiplicationStep(multiplierDigit, topDigit, rawProduct, currentCarry, product, writeDigit, newCarry, isLastDigit, () => setHintBtnLock(false));
+
+                            saveGridState(); checkRowFilled(r); return;
                         }
                         currentCarry = newCarry;
                     }
@@ -1029,28 +1081,57 @@
                          const inp2 = document.getElementById(`inp_2_${i}`);
                          const inp3 = document.getElementById(`inp_3_${i}`);
                          
-                         const val1 = inp1 && inp1.value ? parseInt(toEnglishNum(inp1.value)) : 0;
-                         const val2 = inp2 && inp2.value ? parseInt(toEnglishNum(inp2.value)) : 0;
-                         const val3 = inp3 && inp3.value ? parseInt(toEnglishNum(inp3.value)) : 0;
-                         
-                         const sum = val1 + val2 + val3 + pendingCarry;
+                         const hasVal1 = (inp1 && inp1.value !== "");
+                         const hasVal2 = (inp2 && inp2.value !== "");
+                         const hasVal3 = (inp3 && inp3.value !== "");
+
+                         const val1 = hasVal1 ? parseInt(toEnglishNum(inp1.value)) : null;
+                         const val2 = hasVal2 ? parseInt(toEnglishNum(inp2.value)) : null;
+                         const val3 = hasVal3 ? parseInt(toEnglishNum(inp3.value)) : null;
+
+                         if (val1 === null && val2 === null && val3 === null && pendingCarry === 0) {
+                             continue;
+                         }
+
+                         const num1 = val1 !== null ? val1 : 0;
+                         const num2 = val2 !== null ? val2 : 0;
+                         const num3 = val3 !== null ? val3 : 0;
+
+                         const sum = num1 + num2 + num3 + pendingCarry;
                          const writeDigit = sum % 10;
                          const newCarry = Math.floor(sum / 10);
                          
                          const resultInp = document.getElementById(`inp_4_${i}`);
                          
                          if(resultInp && (resultInp.value === "" || resultInp.classList.contains('wrong-input'))) {
-                             if(inp1) inp1.parentElement.classList.add('col-highlight');
-                             if(inp2) inp2.parentElement.classList.add('col-highlight');
-                             if(inp3) inp3.parentElement.classList.add('col-highlight');
+                             const carryHeader = document.getElementById(`ac_${i}`);
+                             if(carryHeader) carryHeader.classList.add('col-highlight');
+                             if(inp1) inp1.classList.add('col-highlight');
+                             if(inp2) inp2.classList.add('col-highlight');
+                             if(inp3) inp3.classList.add('col-highlight');
+                             resultInp.classList.add('col-highlight');
                              
                              resultInp.value = toPersianNum(writeDigit);
                              resultInp.classList.add('correct-input');
                              flashElement(resultInp);
                              
-                             let msg = `جمع ستون: <b>${toPersianNum(val1)}</b> + <b>${toPersianNum(val2)}</b> + <b>${toPersianNum(val3)}</b>`;
-                             if(pendingCarry > 0) msg += ` + <b>${toPersianNum(pendingCarry)}</b> (انتقال)`;
-                             msg += ` می‌شه <b>${toPersianNum(sum)}</b>.`;
+                             const presentVals = [val1, val2, val3].filter(v => v !== null);
+                             let msg = '';
+
+                             if (presentVals.length >= 2) {
+                                 msg = `جمع ستون: ` + presentVals.map(v => `<b>${toPersianNum(v)}</b>`).join(' + ');
+                                 if (pendingCarry > 0) msg += ` + <b>${toPersianNum(pendingCarry)}</b> (انتقال)`;
+                                 msg += ` می‌شه <b>${toPersianNum(sum)}</b>.`;
+                             } else if (presentVals.length === 1) {
+                                 const singleVal = presentVals[0];
+                                 if (pendingCarry > 0) {
+                                     msg = `<b>${toPersianNum(singleVal)}</b> با <b>${toPersianNum(pendingCarry)}</b> (انتقال) می‌شه <b>${toPersianNum(sum)}</b>.`;
+                                 } else {
+                                     msg = `چون عدد دیگری در این ستون نیست، خود <b>${toPersianNum(writeDigit)}</b> رو می‌نویسیم.`;
+                                 }
+                             } else {
+                                 msg = `چون عددی در این ستون نیست، رقم انتقال (<b>${toPersianNum(pendingCarry)}</b>) رو مستقیم می‌نویسیم.`;
+                             }
                              
                              if(newCarry > 0) {
                                  msg += `<br><b>${toPersianNum(writeDigit)}</b> رو می‌نویسیم، <b>${toPersianNum(newCarry)}</b> رو می‌بریم بالا.`;
@@ -1059,11 +1140,14 @@
                                      carryCell.innerText = toPersianNum(newCarry);
                                      flashElement(carryCell);
                                  }
-                             } else {
+                             } else if (presentVals.length >= 2 || (presentVals.length === 1 && pendingCarry > 0)) {
                                  msg += `<br><b>${toPersianNum(writeDigit)}</b> رو می‌نویسیم.`;
                              }
                              
                              showHintAlert(msg);
+                             setHintBtnLock(true);
+                             GameAudio.speakColumnAdd(presentVals, pendingCarry, sum, writeDigit, newCarry, () => setHintBtnLock(false));
+
                              saveGridState(); checkRowFilled(4);
                              return;
                          }
@@ -1071,9 +1155,14 @@
                      }
                 }
             }
-            showHintAlert("فوق‌العاده‌ای قهرمانم! همه‌ی مراحل رو کاملاً درست حل کردی! 🌟");
+
+            showHintAlert("💡 <b>آموزش این ضرب تموم شد!</b><br>حالا دکمه‌ی <b>«ثبت امتیاز و مشاهده کارنامه 🏆»</b> رو بزن تا این دور تمرینی ثبت بشه و بتونی بدون راهنما برای گرفتن ستاره تلاش کنی! 🌟");
+            setHintBtnLock(true);
+            GameAudio.speakFinished(() => setHintBtnLock(false));
             const finBtn = document.getElementById('finishBtn');
             if (finBtn) finBtn.classList.remove('btn-hidden');
+            const nextBtn = document.getElementById('newQBtn');
+            if (nextBtn) nextBtn.classList.add('btn-hidden');
         } catch (errHint) {
             console.error(errHint);
         }
@@ -1086,45 +1175,14 @@
         }
     }
 
-    function generateVerticalArt(starCount, currentMinute) {
-         const sStr = starCount.toString().padStart(2, '0');
-         const mStr = currentMinute.toString().padStart(2, '0');
-         let art = "";
-
-         const getRow = (fillChar, emptyChar, d1, d2, rowIdx) => {
-             const digit1Row = ART_NUMS[parseInt(d1)][rowIdx];
-             const digit2Row = ART_NUMS[parseInt(d2)][rowIdx];
-             let rowStr = emptyChar; 
-             rowStr += digit1Row.map(p => p ? fillChar : emptyChar).join('');
-             rowStr += emptyChar; 
-             rowStr += digit2Row.map(p => p ? fillChar : emptyChar).join('');
-             rowStr += emptyChar; 
-             return rowStr;
-         }
-
-         art += "\u202A" + "⬜".repeat(9) + "\u202C\n"; 
-
-         for(let i=0; i<5; i++) {
-             art += "\u202A" + getRow("⭐", "⬜", sStr[0], sStr[1], i) + "\u202C\n";
-         }
-
-         art += "\u202A" + "⬜".repeat(9) + "\u202C\n"; 
-
-         for(let i=0; i<5; i++) {
-             art += "\u202A" + getRow("⬛", "⬜", mStr[0], mStr[1], i) + "\u202C\n";
-         }
-
-         art += "\u202A" + "⬜".repeat(9) + "\u202C"; 
-
-         return art;
-    }
-
     async function finishSession() {
+        GameAudio.stop();
         const earnedThisGame = state.currentGameUsedHint ? 0 : 1;
         
         state.totalPlays = state.totalPlays + 1;
         if (earnedThisGame === 1) {
             state.stars = state.stars + 1;
+            GameAudio.playSFX('win');
         }
         state.currentScreen = 'report';
         
@@ -1212,6 +1270,7 @@
     }
 
     function restartGame() { 
+        GameAudio.stop();
         state.currentScreen = 'game';
         saveProfile();
         showScreen('screen-game'); 
@@ -1432,6 +1491,10 @@
     document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('beforeunload', saveProfile);
         authenticatePortalStudent();
+
+        const isMuted = GameAudio.isMuted;
+        const btn = document.getElementById('btn-sound-toggle');
+        if (btn) btn.innerText = isMuted ? '🔇 صدا: خاموش' : '🔊 صدا: روشن';
 
         if ('serviceWorker' in navigator) {
             const hadExistingController = !!navigator.serviceWorker.controller;
