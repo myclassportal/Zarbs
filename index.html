@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>بازی ضرب سه رقم در سه رقم</title>
+    <title>ضرب سه رقم در سه رقم</title>
     <script src="supabase.js" defer></script>
     <script src="game-db.js" defer></script>
     <script src="game-audio.js" defer></script>
@@ -40,10 +40,12 @@
             background-color: var(--bg);
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             min-height: 100vh;
             color: var(--primary);
-            padding: 10px;
+            padding: 15px 10px 80px 10px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             -webkit-tap-highlight-color: transparent;
         }
         .screen {
@@ -70,6 +72,7 @@
             max-width: 650px;
             text-align: center;
             position: relative;
+            margin: 0 auto;
         }
         h1, h2 {
             margin-bottom: 10px;
@@ -309,7 +312,7 @@
     <div class="modal-box">
         <div class="modal-title">⚠️ شروع حالت آموزشی</div>
         <div class="modal-text">
-            با ورود به راهنمای گام‌به‌گام صوتی، راه‌حل مرحله‌به‌مرحله آموزش داده می‌شود. این دور فقط برای یادگیری است و ستاره‌ای ثبت نمی‌شود.
+            با ورود به راهنمای گام‌به‌گامِ صوتی، راه‌حل مرحله‌به‌مرحله بهت آموزش داده می‌شه. این دور فقط برای یادگیریه و ستاره‌ای ثبت نمی‌شه.
         </div>
         <div class="modal-buttons">
             <button class="btn btn-secondary" onclick="startPracticeMode()">آره، شروع کن</button>
@@ -320,7 +323,7 @@
 
 <div class="container">
     <div class="screen active" id="screen-register">
-        <span class="school-name" id="portal-school-title">دبستان معاد خرگوشی</span>
+        <span class="school-name" id="portal-school-title">---</span>
         
         <div id="register-container">
             <div id="portal-welcome-section">
@@ -329,31 +332,31 @@
                 
                 <div style="display: flex; flex-direction: column; gap: 10px; background: #f8f9fa; border-radius: 10px; padding: 15px; border: 1px dashed #bdc3c7; margin: 15px auto; text-align: right; direction: rtl; font-size: 1rem; width: 100%; max-width: 280px;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span>👤 نامت:</span>
+                        <span>👤 نام دانش‌آموز:</span>
                         <span id="portal-student-name" style="font-weight:bold; color:#2c3e50;">---</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span>🎮 تعداد تلاش‌های قبلی:</span>
+                        <span>🎮 تعداد بازی‌های قبلی:</span>
                         <span id="portal-prev-plays" style="font-weight:bold; color:#e67e22;">۰</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span>⭐ ستاره‌های ثبت‌شده:</span>
+                        <span>⭐ ستاره‌های ثبت‌شده‌ی قبلی:</span>
                         <span id="portal-prev-stars" style="font-weight:bold; color:#f39c12;">۰ ⭐</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; align-items:center; font-weight:bold; color:#27ae60; border-top:1px dashed #bdc3c7; padding-top:8px; margin-top:5px;">
-                        <span>🎯 ستاره مورد نیاز تکلیف:</span>
+                        <span>🎯 ستاره‌ی مورد نیاز تکلیف:</span>
                         <span id="portal-req-stars">۰ ⭐</span>
                     </div>
                 </div>
             </div>
-            <button id="startGame" style="background:#2ecc71; color:white; padding:12px 20px; border:none; border-radius:10px; cursor:pointer; width:100%; max-width:250px; display:block; margin:20px auto 0; font-weight: bold; font-size: 1.1rem; transition: background 0.3s;">شروع بازی تکلیف 🎮</button>
+            <button id="startGame" style="background:#2ecc71; color:white; padding:12px 20px; border:none; border-radius:10px; cursor:pointer; width:100%; max-width:250px; display:block; margin:20px auto 0; font-weight: bold; font-size: 1.1rem; transition: background 0.3s;">شروع بازیِ تکلیف 🎮</button>
         </div>
 
         <div id="portal-error-section" style="display:none; text-align:center; padding:20px; max-width: 450px; margin: 20px auto; background: white; border-radius: 12px; box-shadow:0 6px 18px rgba(0,0,0,0.12);">
             <div style="font-size:2.5rem; margin-bottom:10px;">⚠️</div>
-            <h3 id="portal-error-title" style="color:#d32f2f; margin-bottom:8px; font-weight:bold; font-size:15pt;">خطا در اتصال به پرتال کلاس</h3>
-            <p id="portal-error-desc" style="color:#555; font-size:12pt; margin-bottom:15px; line-height:1.6;">جهت بارگذاری مشخصات و تکالیفت، اتصال به اینترنت الزامی است. لطفا شبکه‌ات را بررسی کن و مجدداً تلاش کن.</p>
-            <button id="portal-retry-auth-btn" style="background:#1e90ff; color: white; padding: 10px 20px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;" onclick="retryAuthentication()">🔄 تلاش مجدد برای اتصال</button>
+            <h3 id="portal-error-title" style="color:#d32f2f; margin-bottom:8px; font-weight:bold; font-size:15pt;">مشکل در اتصال به کلاس!</h3>
+            <p id="portal-error-desc" style="color:#555; font-size:12pt; margin-bottom:15px; line-height:1.6;">برای اینکه بتونی تکالیفت رو ببینی و بازی کنی، باید به اینترنت وصل باشی. لطفاً شبکه‌ی اینترنتت رو بررسی کن و دوباره دکمه‌ی زیر رو بزن.</p>
+            <button id="portal-retry-auth-btn" style="background:#1e90ff; color: white; padding: 10px 20px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;" onclick="retryAuthentication()">🔄 تلاش دوباره برای اتصال</button>
         </div>
     </div>
 
@@ -379,32 +382,33 @@
 
         <div style="margin-top: 20px; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
             <button id="hintBtn" class="btn btn-secondary" onclick="revealOneStepHint()">راهنمای گام‌به‌گام 💡</button>
-            <button id="finishBtn" class="btn btn-hidden" style="background:#7f8c8d;" onclick="finishSession()">ثبت امتیاز و مشاهده کارنامه 🏆</button>
-            <button id="newQBtn" class="btn btn-info btn-hidden" onclick="newQuestion()">سوال بعدی 🎮</button>
+            <button id="finishBtn" class="btn btn-hidden" style="background:#7f8c8d;" onclick="finishSession()">ثبت امتیاز و دیدن کارنامه 🏆</button>
+            <button id="newQBtn" class="btn btn-info btn-hidden" onclick="newQuestion()">سؤال بعدی 🎮</button>
         </div>
     </div>
 
     <div class="screen" id="screen-report">
-        <h2>کارنامه درخشانت 🌟</h2>
+        <h2>کارنامه‌ی درخشانت 🌟</h2>
         <div style="text-align: right; background: #fafafa; padding: 15px; border-radius: 10px; border: 1px solid #eee; margin-bottom: 20px;">
-            <p><strong>مدرسه:</strong> <span id="repSchool">دبستان معاد خرگوشی</span></p>
+            <p><strong>نام تمرین:</strong> <span>ضرب سه رقم در سه رقم</span></p>
+            <p><strong>نام مدرسه:</strong> <span id="repSchool">---</span></p>
             <p><strong>نام دانش‌آموز:</strong> <span id="repName">---</span></p>
-            <p><strong>تاریخ و زمان:</strong> <span id="repDate">---</span></p>
-            <p><strong>تعداد تلاش‌ها:</strong> <span id="repPlays">۰</span></p>
-            <p><strong>ستاره‌های گرفته‌شده:</strong> <span id="repStars">۰</span></p>
-            <p id="portal-req-stars-row" style="display:none;"><strong>🎯 ستاره مورد نیاز تکلیف:</strong> <span id="repReqStars">۰ ⭐</span></p>
+            <p><strong>تاریخ و ساعت:</strong> <span id="repDate" style="direction: ltr; display: inline-block;">---</span></p>
+            <p><strong>تعداد کل بازی‌ها:</strong> <span id="repPlays">۰</span></p>
+            <p><strong>تعداد کل ستاره‌ها:</strong> <span id="repStars">۰</span></p>
+            <p id="portal-req-stars-row" style="display:none;"><strong>🎯 ستاره‌ی مورد نیاز تکلیف:</strong> <span id="repReqStars">۰ ⭐</span></p>
         </div>
 
         <div id="portal-submit-badge" style="display:none; background:#fff3e0; border:1px solid #ffe082; color:#e65100; padding:15px; border-radius:12px; margin-bottom:12px; font-weight:bold; font-size:12.5pt; line-height:1.6; text-align:right; width: 100%;"></div>
 
         <div id="portal-goal-reached-badge" style="display:none; background:#e8f5e9; border:2px solid #2e7d32; color:#1b5e20; padding:15px; border-radius:12px; margin-bottom:15px; font-weight:bold; font-size:12.5pt; line-height:1.6; direction:rtl; text-align:right; width: 100%;">
-            🎉 هوراااا قهرمان پرتلاش! هدف تکلیف رو کاملاً ترکوندی و همه‌ی ستاره‌های مورد نیاز رو گرفتی! تو فوق‌العاده‌ای! 🥇 حالا می‌تونی با خیال راحت به پرتال برگردی. خداقوت! ❤️
+            🎉 هورا قهرمان پرتلاش! گل کاشتی! همه‌ی ستاره‌های این تکلیف رو گرفتی و عالی درخشیدی! تو فوق‌العاده‌ای! 🥇 حالا می‌تونی با خیال راحت به پرتال کلاس برگردی. ❤️
         </div>
 
         <div id="portal-back-instruction" style="display:none; width: 100%;"></div>
 
         <br>
-        <button id="playAgainBtn" class="btn" onclick="restartGame()">تلاش دوباره 🔄</button>
+        <button id="playAgainBtn" class="btn" onclick="restartGame()">شروع یه بازیِ جدید 🎮</button>
     </div>
 
     <div id="portal-submitting-screen" class="screen" style="background:linear-gradient(135deg,#a1c4fd,#c2e9fb); position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px;">
@@ -414,7 +418,7 @@
                 <div id="portal-progress-bar" style="background:linear-gradient(90deg, #ff007f, #aa00ff, #00b0ff); width:0%; height:100%; transition:width 0.2s;"></div>
             </div>
             <p id="portal-submit-status-text" style="font-size:12pt; color:#555; font-weight:bold; line-height:1.6; direction:rtl;"></p>
-            <button id="portal-retry-submit-btn" style="display:none; margin:15px auto 0; background:#e74c3c; color: white; padding: 10px 20px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;" onclick="retrySubmission()">🔄 تلاش مجدد برای ارسال</button>
+            <button id="portal-retry-submit-btn" style="display:none; margin:15px auto 0; background:#e74c3c; color: white; padding: 10px 20px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer;" onclick="retrySubmission()">🔄 تلاش دوباره برای ارسال</button>
         </div>
     </div>
 
@@ -423,25 +427,24 @@
         <div style="background: #fff; border: 2px dashed #3498db; border-radius: 12px; padding: 20px; margin-bottom: 25px; line-height: 1.8; text-align: justify; direction: rtl;">
             <span style="font-size: 14pt; font-weight: bold; color: #2c3e50; display: block; margin-bottom: 10px;" id="ast-welcome">سلام قهرمان!</span>
             <p style="font-size: 11pt; color: #333; margin: 0;">
-                بازی قبلی‌ات با موفقیت تمام شده بود، اما به خاطر قطع شدن اینترنت، ستاره‌ی طلایی‌ات به دفتر کلاسی معلم نرسیده بود. 
-                اصلاً نگران نباش! نیازی به بازی دوباره نیست. دکمه زیر را بزن تا ستاره‌ات ثبت بشه و کارنامه‌اش رو ببینی. 😊
+                بازی قبلی‌ات با موفقیت تموم شده بود، اما به خاطر قطع‌شدن اینترنت، ستاره‌ی طلایی‌ات به دفتر کلاسیِ معلم نرسید. اصلاً نگران نباش! نیازی نیست دوباره بازی کنی؛ فقط دکمه‌ی زیر رو بزن تا ستاره‌ات ثبت بشه و کارنامه‌ی قشنگت رو ببینی. 😊
             </p>
         </div>
         <div style="display: flex; flex-direction: column; gap: 10px; background: #f8f9fa; border: 1px solid #bdc3c7; border-radius: 10px; padding: 15px; margin-bottom: 25px; text-align: right; direction: rtl; font-size:12pt;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span>👤 نامت:</span>
+                <span>👤 نام دانش‌آموز:</span>
                 <span id="ast-name" style="font-weight:bold; color:#2c3e50;">---</span>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span>⭐ ستاره‌های ثبت‌شده قبلی:</span>
+                <span>⭐ ستاره‌های ثبت‌شده‌ی قبلی:</span>
                 <span id="ast-stars" style="font-weight:bold; color:#f39c12;">۰ ⭐</span>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span>🎯 ستاره هدف تکلیف:</span>
+                <span>🎯 ستاره‌ی هدف تکلیف:</span>
                 <span id="ast-req-stars" style="font-weight:bold; color:#27ae60;">۰ ⭐</span>
             </div>
         </div>
-        <button style="width: 100%; height: 50px; background: #2ecc71; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size:13pt;" onclick="submitAssistantStar()">🌟 ثبت ستاره‌ی طلایی من و دریافت کارنامه</button>
+        <button style="width: 100%; height: 50px; background: #2ecc71; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size:13pt;" onclick="submitAssistantStar()">🌟 ثبت ستاره‌ی طلایی من و دیدن کارنامه</button>
     </div>
 </div>
 
@@ -450,7 +453,7 @@
     let GAME_STATE_STORAGE = 'gameState_Zarb3x3_Default';
 
     let state = {
-        name: "", stars: 0, totalPlays: 0,
+        name: "", school: "", stars: 0, totalPlays: 0,
         currentProblem: null, currentGameUsedHint: false,
         reportSent: false,
         gridValues: {},
@@ -505,6 +508,7 @@
                     if (!state.gridValues) state.gridValues = {};
                     if (!state.carryStates) state.carryStates = {};
                     if (!state.addCarryValues) state.addCarryValues = {};
+                    if (typeof state.school === 'undefined') state.school = '';
                 }
             } catch(e){}
         }
@@ -982,7 +986,7 @@
                         resetCarryOver(); 
                         zInp.value = toPersianNum(0); zInp.classList.add('correct-input');
                         flashElement(zInp);
-                        showHintAlert("چون دَهْگان رو ضَرْب می‌کنیم، اول یک دونه ۰ می‌ذاریم.");
+                        showHintAlert("چون دهگان رو ضرب می‌کنیم، اول یه دونه ۰ می‌ذاریم.");
                         setHintBtnLock(true);
                         GameAudio.speakZeroDahgan(() => setHintBtnLock(false));
                         saveGridState(); checkRowFilled(r); return;
@@ -996,7 +1000,7 @@
                         resetCarryOver(); 
                         zInp1.value = toPersianNum(0); zInp1.classList.add('correct-input');
                         flashElement(zInp1);
-                        showHintAlert("چون صَدْگان رو ضَرْب می‌کنیم، اول ۰ِ یِکان رو می‌ذاریم.");
+                        showHintAlert("چون صدگان رو ضرب می‌کنیم، اول ۰ِ یکان رو می‌ذاریم.");
                         setHintBtnLock(true);
                         GameAudio.speakZeroAvalSadgan(() => setHintBtnLock(false));
                         saveGridState(); checkRowFilled(r); return;
@@ -1004,7 +1008,7 @@
                     if(zInp2 && !zInp2.value) {
                         zInp2.value = toPersianNum(0); zInp2.classList.add('correct-input');
                         flashElement(zInp2);
-                        showHintAlert("حالا ۰ِ دَهْگان رو هم می‌ذاریم.");
+                        showHintAlert("حالا ۰ِ دهگان رو هم می‌ذاریم.");
                         setHintBtnLock(true);
                         GameAudio.speakZeroDovomSadgan(() => setHintBtnLock(false));
                         saveGridState(); checkRowFilled(r); return;
@@ -1127,7 +1131,7 @@
                                  if (pendingCarry > 0) {
                                      msg = `<b>${toPersianNum(singleVal)}</b> با <b>${toPersianNum(pendingCarry)}</b> (انتقال) می‌شه <b>${toPersianNum(sum)}</b>.`;
                                  } else {
-                                     msg = `چون عدد دیگری در این ستون نیست، خود <b>${toPersianNum(writeDigit)}</b> رو می‌نویسیم.`;
+                                     msg = `چون عدد دیگه‌ای در این ستون نیست، خود <b>${toPersianNum(writeDigit)}</b> رو می‌نویسیم.`;
                                  }
                              } else {
                                  msg = `چون عددی در این ستون نیست، رقم انتقال (<b>${toPersianNum(pendingCarry)}</b>) رو مستقیم می‌نویسیم.`;
@@ -1156,7 +1160,7 @@
                 }
             }
 
-            showHintAlert("💡 <b>آموزش این ضرب تموم شد!</b><br>حالا دکمه‌ی <b>«ثبت امتیاز و مشاهده کارنامه 🏆»</b> رو بزن تا این دور تمرینی ثبت بشه و بتونی بدون راهنما برای گرفتن ستاره تلاش کنی! 🌟");
+            showHintAlert("💡 <b>آموزش این ضرب تموم شد!</b><br>حالا دکمه‌ی <b>«ثبت امتیاز و دیدن کارنامه 🏆»</b> رو بزن تا این دور تمرینی ثبت بشه و بتونی بدون راهنما برای گرفتن ستاره تلاش کنی! 🌟");
             setHintBtnLock(true);
             GameAudio.speakFinished(() => setHintBtnLock(false));
             const finBtn = document.getElementById('finishBtn');
@@ -1216,7 +1220,12 @@
         const timeStr = now.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         const dateTimeStr = toPersianNum(dateStr) + ' ' + toPersianNum(timeStr);
 
-        document.getElementById('repName').innerText = state.name;
+        const schoolEl = document.getElementById('portal-school-title');
+        const repSchool = document.getElementById('repSchool');
+        const finalSchool = state.school || (schoolEl && schoolEl.textContent.trim() !== '---' ? schoolEl.textContent.trim() : '---');
+        if (repSchool) repSchool.innerText = finalSchool;
+
+        document.getElementById('repName').innerText = state.name || '---';
         document.getElementById('repDate').innerText = dateTimeStr;
         document.getElementById('repPlays').innerText = toPersianNum(games);
         document.getElementById('repStars').innerText = toPersianNum(stars);
@@ -1238,10 +1247,10 @@
         playAgainBtn.style.display = 'block';
 
         if (state.currentGameUsedHint) {
-            playAgainBtn.innerText = "بازی دوباره بدون کمک 💡";
+            playAgainBtn.innerText = "بازیِ دوباره بدون کمک 💡";
             backInstruction.innerHTML = `
                 <div style="background:#fff3e0; border:1px solid #ffe082; color:#e65100; padding:12px; border-radius:12px; margin-top:10px; font-size:11.5pt; line-height:1.6; text-align:center;">
-                    💡 این دور بازی‌ات آموزشی بود و برای گرفتن ستاره باید بدون کمک حلش کنی. دکمه پایین رو بزن تا بدون کمک تلاش کنی!
+                    💡 این دور بازی‌ات آموزشی بود و برای گرفتن ستاره باید بدون کمک حلش کنی. دکمه‌ی پایین رو بزن تا بدون کمک تلاش کنی!
                 </div>
             `;
             backInstruction.style.display = 'block';
@@ -1250,19 +1259,19 @@
             playAgainBtn.style.display = 'none';
             backInstruction.innerHTML = `
                 <div style="background:#e8f5e9; border:1px solid #2e7d32; color:#1b5e20; padding:15px; border-radius:12px; margin-top:10px; font-weight:bold; font-size:12pt; line-height:1.6; text-align:center;">
-                    📱 آفرین! تکلیف با موفقیت تکمیل شد.<br>
-                    حالا با زدن <b>دکمه بازگشت (Back) گوشی</b> به پرتال کلاس برگرد.
+                    📱 آفرین! تکلیفت با موفقیت تموم شد.<br>
+                    حالا با زدن <b>دکمه‌ی بازگشت (Back) گوشی</b> به پرتال کلاس برگرد.
                 </div>
             `;
             backInstruction.style.display = 'block';
         } else {
             const remaining = Portal.requiredStars - stars;
-            submitBadge.innerHTML = `✨ آفرین دانش‌آموز زرنگم! تو <b>${toPersianNum(stars)}</b> ستاره از <b>${toPersianNum(Portal.requiredStars)}</b> ستاره‌ی این تکلیف رو گرفتی! ⭐ فقط به <b>${toPersianNum(remaining)}</b> ستاره‌ی دیگه نیاز داری تا تیک تکلیف بخوره. بدو برو بعدی رو حل کن! 🏆`;
+            submitBadge.innerHTML = `✨ آفرین دانش‌آموز زرنگم! تو <b>${toPersianNum(stars)}</b> ستاره از <b>${toPersianNum(Portal.requiredStars)}</b> ستاره‌ی این تکلیف رو گرفتی! ⭐ فقط به <b>${toPersianNum(remaining)}</b> ستاره‌ی دیگه نیاز داری تا تکلیفت کامل بشه. بدو برو بعدی رو هم حل کن! 🏆`;
             submitBadge.style.display = 'block';
-            playAgainBtn.innerText = "گرفتن ستاره بیشتر 🎮";
+            playAgainBtn.innerText = "گرفتن ستاره‌ی بیشتر 🎮";
             backInstruction.innerHTML = `
                 <div style="background:#fff3e0; border:1px solid #ffe082; color:#e65100; padding:12px; border-radius:12px; margin-top:10px; font-size:11.5pt; line-height:1.6; text-align:center;">
-                    💡 اگر می‌خواهی بعداً بازی کنی، با زدن <b>دکمه بازگشت (Back) گوشی</b> به پرتال برگرد.
+                    💡 اگه می‌خوای ادامه‌ی بازی رو بعداً انجام بدی، با زدن <b>دکمه‌ی بازگشت (Back) گوشی</b> به پرتال برگرد.
                 </div>
             `;
             backInstruction.style.display = 'block';
@@ -1370,6 +1379,7 @@
                     } else {
                         state = {
                             name: data.name,
+                            school: '',
                             stars: data.stars,
                             totalPlays: data.plays,
                             currentProblem: null,
@@ -1380,6 +1390,11 @@
                             addCarryValues: {},
                             currentScreen: 'register'
                         };
+                    }
+
+                    const schoolElCandidate = document.getElementById('portal-school-title');
+                    if (schoolElCandidate && schoolElCandidate.textContent && schoolElCandidate.textContent.trim() !== '---' && schoolElCandidate.textContent.trim() !== '') {
+                        state.school = schoolElCandidate.textContent.trim();
                     }
                     
                     state.name = data.name || Portal.studentName || state.name || "دانش‌آموز";
@@ -1397,10 +1412,10 @@
                     const activeState = checkSavedUnfinishedState();
                     const startBtn = document.getElementById('startGame');
                     if (activeState) {
-                        startBtn.textContent = 'ادامه بازی (باقیمانده) 🔄';
+                        startBtn.textContent = 'ادامه‌ی بازی (باقی‌مونده) 🔄';
                         startBtn.style.backgroundColor = '#ff9800';
                     } else {
-                        startBtn.textContent = 'شروع بازی تکلیف 🎮';
+                        startBtn.textContent = 'شروع بازیِ تکلیف 🎮';
                         startBtn.style.backgroundColor = '#2ecc71';
                     }
 
@@ -1451,8 +1466,8 @@
                 showScreen('screen-register');
                 document.getElementById('portal-welcome-section').style.display = 'none';
                 document.getElementById('startGame').style.display = 'none';
-                document.getElementById('portal-error-title').textContent = 'لینک ورود نامعتبر است';
-                document.getElementById('portal-error-desc').textContent = 'جهت انجام این تکلیف، حتماً باید از طریق پنل مدرسه و با لینک اختصاصی خودت وارد بشی.';
+                document.getElementById('portal-error-title').textContent = 'لینک ورود درست نیست!';
+                document.getElementById('portal-error-desc').textContent = 'برای انجام این تکلیف، باید حتماً از داخل پرتال مدرسه‌ی خودت و با لینک اختصاصی‌ات وارد بشی.';
                 document.getElementById('portal-retry-auth-btn').style.display = 'none';
                 document.getElementById('portal-error-section').style.display = 'block';
                 const regScreen = document.getElementById('screen-register');
