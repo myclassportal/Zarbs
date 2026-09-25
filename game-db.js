@@ -22,29 +22,30 @@ window.Portal = {
 
   getPersianDateTime() {
     const now = new Date();
-    const dateStr = now.toLocaleDateString('fa-IR', {year: 'numeric', month: '2-digit', day: '2-digit'});
-    const timeStr = now.toLocaleTimeString('fa-IR', {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+    const dateStr = now.toLocaleDateString('fa-IR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const timeStr = now.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     return `${dateStr} - ${timeStr}`;
   },
 
   isNetworkError(error) {
     if (!error) return false;
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return true;
     const msg = (error.message || '').toLowerCase();
     const status = error.status || 0;
     return msg.includes('failed to fetch') || 
            msg.includes('network error') || 
            msg.includes('networkerror') || 
            msg.includes('load failed') || 
-           msg.includes('timeout') ||
-           msg.includes('abort') ||
+           msg.includes('timeout') || 
+           msg.includes('abort') || 
            status === 0 || 
-           status === 408 ||
+           status === 408 || 
            status === 502 || 
            status === 503 || 
            status === 504;
   },
 
-  async fetchWithSmartTimeout(fn, timeouts = [3800, 5200], delayMs = 500) {
+  async fetchWithSmartTimeout(fn, timeouts = [3800, 5000], delayMs = 1000) {
     const maxAttempts = timeouts.length;
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -92,7 +93,7 @@ window.Portal = {
     this.token = urlParams.get('token');
     this.homeworkId = urlParams.get('homework_id');
     this.gameId = urlParams.get('game_id');
-    this.requiredStars = parseInt(urlParams.get('required_stars')) || 3;
+    this.requiredStars = parseInt(urlParams.get('required_stars'), 10) || 3;
 
     if (this.studentId && this.token && this.homeworkId && this.gameId) {
       this.isPortalMode = true;
@@ -106,12 +107,14 @@ window.Portal = {
           throw new Error("کتابخانه Supabase لود نشده است.");
         }
 
-        const lib = window.supabase || supabase;
-        this.supabaseClient = lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-          realtime: {
-            autoConnect: false
-          }
-        });
+        if (!this.supabaseClient) {
+          const lib = window.supabase || supabase;
+          this.supabaseClient = lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            realtime: {
+              autoConnect: false
+            }
+          });
+        }
 
         const { data: gameData, error: errGame } = await this.fetchWithSmartTimeout(
           (signal) => this.supabaseClient
@@ -121,8 +124,8 @@ window.Portal = {
               query_homework_id: this.homeworkId
             })
             .abortSignal(signal),
-          [3800, 5200],
-          500
+          [3800, 5000],
+          1000
         );
 
         if (errGame) throw errGame;
@@ -132,7 +135,7 @@ window.Portal = {
 
           if (gameData.school && gameData.school.school_name) {
             const schoolTitleEl = document.getElementById('portal-school-title');
-            const schoolGameEl = document.getElementById('school');
+            const schoolGameEl = document.getElementById('school') || document.querySelector('.school');
             if (schoolTitleEl) schoolTitleEl.textContent = gameData.school.school_name;
             if (schoolGameEl) schoolGameEl.textContent = gameData.school.school_name;
           }
@@ -146,10 +149,7 @@ window.Portal = {
             this.previousStars = gameData.progress.stars_earned || 0;
           }
 
-          this.showLoadingScreen(true, 'اتصال موفق!', '100%');
-          await new Promise(resolve => setTimeout(resolve, 300));
           this.showLoadingScreen(false);
-
           this.updateWelcomeUI();
 
           if (callbacks && typeof callbacks.onSuccess === 'function') {
@@ -217,7 +217,7 @@ window.Portal = {
   },
 
   showLoadingScreen(show, text = '', progressPercent = '0%') {
-    const loadingScreen = document.getElementById('Screen-Loading');
+    const loadingScreen = document.getElementById('Screen-Loading') || document.getElementById('screen-loading');
     const loadingBar = document.getElementById('portal-loading-bar');
     const loadingText = document.getElementById('portal-loading-text');
 
@@ -225,11 +225,18 @@ window.Portal = {
 
     if (show) {
       loadingScreen.style.display = 'flex';
-      const screens = ['screen-register', 'screen-game', 'screen-report', 'portal-submitting-screen', 'screen-assistant'];
+      const screens = [
+        'screen-register', 'screenRegister',
+        'screen-game', 'screenGame',
+        'screen-report', 'screenReport',
+        'portal-submitting-screen',
+        'screen-assistant'
+      ];
       screens.forEach(s => {
         const el = document.getElementById(s);
         if (el) {
           el.classList.add('hidden');
+          el.classList.remove('active');
           el.style.display = '';
         }
       });
@@ -242,9 +249,13 @@ window.Portal = {
 
   showErrorScreen(show) {
     const errSec = document.getElementById('portal-error-section');
-    const regSec = document.getElementById('register-container');
-    const regScreen = document.getElementById('screen-register');
-    if (regScreen && show) regScreen.classList.remove('hidden');
+    const regSec = document.getElementById('portal-welcome-section') || document.getElementById('register-container');
+    const regScreen = document.getElementById('screen-register') || document.getElementById('screenRegister');
+    if (regScreen && show) {
+      regScreen.classList.remove('hidden');
+      regScreen.classList.add('active');
+      regScreen.style.display = '';
+    }
     if (errSec) errSec.style.display = show ? 'block' : 'none';
     if (regSec) regSec.style.display = show ? 'none' : 'block';
   },
@@ -265,34 +276,43 @@ window.Portal = {
     const retryBtn = document.getElementById('portal-retry-submit-btn');
     const submitScreen = document.getElementById('portal-submitting-screen');
 
-    if (submitScreen) submitScreen.style.display = 'flex';
+    if (submitScreen) {
+      submitScreen.style.display = 'flex';
+      submitScreen.classList.remove('hidden');
+      submitScreen.classList.add('active');
+    }
     
-    ['screen-register', 'screen-game', 'screen-report', 'Screen-Loading', 'screen-assistant'].forEach(s => {
+    const allScreens = [
+      'screen-register', 'screenRegister',
+      'screen-game', 'screenGame',
+      'screen-report', 'screenReport',
+      'Screen-Loading', 'screen-loading',
+      'screen-assistant'
+    ];
+    allScreens.forEach(s => {
       const el = document.getElementById(s);
-      if (el) el.style.display = 'none';
+      if (el) {
+        el.classList.add('hidden');
+        el.classList.remove('active');
+        el.style.display = '';
+      }
     });
 
     if (progressBar) {
-      progressBar.style.width = '0%';
+      progressBar.style.width = '40%';
       progressBar.style.backgroundColor = '#7b1fa2';
     }
     if (statusText) {
       statusText.style.color = '#555';
-      statusText.innerText = 'در حال بسته‌بندی اطلاعات...';
+      statusText.innerText = 'ارتباط با سرور پرتال کلاس...';
     }
     if (retryBtn) retryBtn.style.display = 'none';
 
     try {
-      if (progressBar) progressBar.style.width = '20%';
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      const pendingStars = parseInt(localStorage.getItem(pendingStarsKey)) || 0;
+      const pendingStars = parseInt(localStorage.getItem(pendingStarsKey), 10) || 0;
       const currentPlays = this.previousPlays + 1;
       const currentStars = this.previousStars + pendingStars;
       const currentPersianDateTime = this.getPersianDateTime();
-
-      if (progressBar) progressBar.style.width = '50%';
-      if (statusText) statusText.innerText = 'ارتباط با سرور پرتال کلاس...';
 
       const { error } = await this.fetchWithSmartTimeout(
         (signal) => this.supabaseClient
@@ -307,23 +327,27 @@ window.Portal = {
             played_at: currentPersianDateTime
           })
           .abortSignal(signal),
-        [3500, 5000],
-        400
+        [3800, 5000],
+        1000
       );
 
-      if (progressBar) progressBar.style.width = '80%';
-      await new Promise(resolve => setTimeout(resolve, 200));
-
       if (error) throw error;
-
-      if (progressBar) progressBar.style.width = '100%';
-      if (statusText) statusText.innerText = 'با موفقیت ثبت شد!';
-      await new Promise(resolve => setTimeout(resolve, 400));
 
       localStorage.removeItem(needsSubmitKey);
       localStorage.removeItem(pendingStarsKey);
 
-      if (submitScreen) submitScreen.style.display = 'none';
+      if (submitScreen) {
+        submitScreen.style.display = 'none';
+        submitScreen.classList.add('hidden');
+        submitScreen.classList.remove('active');
+      }
+
+      allScreens.forEach(s => {
+        const el = document.getElementById(s);
+        if (el) {
+          el.style.display = '';
+        }
+      });
 
       this.previousPlays = currentPlays;
       this.previousStars = currentStars;
@@ -357,9 +381,11 @@ window.Portal = {
 
 window.retryAuthentication = async function() {
   const errSec = document.getElementById('portal-error-section');
-  const regSec = document.getElementById('register-container');
+  const regSec = document.getElementById('portal-welcome-section') || document.getElementById('register-container');
+  const regScreen = document.getElementById('screen-register') || document.getElementById('screenRegister');
   if (errSec) errSec.style.display = 'none';
   if (regSec) regSec.style.display = 'block';
+  if (regScreen) regScreen.style.display = '';
 
   if (Portal._lastAuthCallbacks) {
     await Portal.authenticate(Portal._lastAuthCallbacks);
